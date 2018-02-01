@@ -569,6 +569,8 @@ while (Ping()>5)
 
     servo_RightMotor.writeMicroseconds(1200);
     servo_LeftMotor.writeMicroseconds(1200);
+
+    turn();
     }
 }
  
@@ -672,7 +674,11 @@ int Ping()
 #endif
 }
 
-  
+void turn()
+{
+    servo_LeftMotor.writeMicroseconds(1600); 
+    servo_RightMotor.writeMicroseconds(1400);
+}
 
 
 
