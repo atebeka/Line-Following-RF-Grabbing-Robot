@@ -1,4 +1,5 @@
-/*
+
+   /*
 
  MSE 2202 MSEBot base code for Labs 3 and 4
  Language: Arduino
@@ -9,6 +10,7 @@
  Rev 2 - Update for MSEduino v. 2
  
  */
+
 
 #include <Servo.h>
 #include <EEPROM.h>
@@ -65,6 +67,7 @@ const int ci_Middle_Line_Tracker_LED = 9;
 const int ci_Left_Line_Tracker_LED = 12;
 
 //constants
+ int counterr=1;
 
 // EEPROM addresses
 const int ci_Left_Line_Tracker_Dark_Address_L = 0;
@@ -87,8 +90,8 @@ const int ci_Right_Motor_Offset_Address_H = 15;
 const int ci_Left_Motor_Stop = 1500;        // 200 for brake mode; 1500 for stop
 const int ci_Right_Motor_Stop = 1500;
 const int ci_Grip_Motor_Open = 140;         // Experiment to determine appropriate value
-const int ci_Grip_Motor_Closed = 90;        //  "
-const int ci_Arm_Servo_Retracted = -20;      //  "
+const int ci_Grip_Motor_Closed = 50;        //  "
+const int ci_Arm_Servo_Retracted = 70;      //  "
 const int ci_Arm_Servo_Extended = 120;      //  "
 const int ci_Display_Time = 500;
 const int ci_Line_Tracker_Calibration_Interval = 100;
@@ -285,24 +288,24 @@ double  starttime = millis();
 #endif
 
        // set motor speeds
-        ui_Left_Motor_Speed = constrain(ui_Motors_Speed + ui_Left_Motor_Offset, 1550, 1600);
-        ui_Right_Motor_Speed = constrain(ui_Motors_Speed + ui_Right_Motor_Offset, 1550, 1600);
+        ui_Left_Motor_Speed = constrain(ui_Motors_Speed + ui_Left_Motor_Offset, 1550, 1650);
+        ui_Right_Motor_Speed = constrain(ui_Motors_Speed + ui_Right_Motor_Offset, 1550, 1650);
 
 /********************** LINE TRACKING ********************/
 
    /*
-  if ((ui_Right_Line_Tracker_Data < right_threshold) && (ui_Middle_Line_Tracker_Data < middle_threshold))
-  {
-    servo_RightMotor.writeMicroseconds(1500);
-    servo_LeftMotor.writeMicroseconds(1600);
-  }
-
   if ((ui_Left_Line_Tracker_Data < left_threshold) && (ui_Middle_Line_Tracker_Data < middle_threshold))
   {
     servo_RightMotor.writeMicroseconds(1600);
     servo_LeftMotor.writeMicroseconds(1500);
   }*/
   
+   if ((ui_Middle_Line_Tracker_Data > (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Left_Line_Tracker_Data > (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)))
+  {
+    servo_RightMotor.writeMicroseconds(ci_Right_Motor_Stop); 
+     servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+  }
+
   if(ui_Middle_Line_Tracker_Data > (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))
   {
     servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
@@ -502,37 +505,43 @@ if((ui_Right_Line_Tracker_Data > (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_T
       } 
       break;
     }    
-    /*MY CODEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE*/
-case 5: 
+
+
+    case 5: 
     {
 readLineTrackers();
 
-if ((ui_Right_Line_Tracker_Data > (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Left_Line_Tracker_Data > (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Middle_Line_Tracker_Data > (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)))
-{
-          servo_RightMotor.writeMicroseconds(1600);
-          servo_LeftMotor.writeMicroseconds(1600);
-}
-else {
-  for(int pos = 0; pos < 50; pos++)  // goes from 0 degrees to 180 degrees 
-  {                                  // in steps of 1 degree 
-    servo_RightMotor.write(pos);              // tell servo to go to position in variable 'pos' 
-    delay(15);                       // waits 15ms for the servo to reach the position 
-  } 
-          servo_RightMotor.writeMicroseconds(1200);
-         servo_LeftMotor.writeMicroseconds(1800);
-}
-  if ((ui_Right_Line_Tracker_Data < (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Left_Line_Tracker_Data > (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Middle_Line_Tracker_Data < (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)))
+      if ((ui_Right_Line_Tracker_Data < (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Left_Line_Tracker_Data > (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))&& (ui_Middle_Line_Tracker_Data < (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) )
 {
   servo_LeftMotor.writeMicroseconds(ci_Left_Motor_Stop); 
    servo_RightMotor.writeMicroseconds(ci_Right_Motor_Stop);
    delay(1000);
+   ui_Robot_State_Index=6;
+   break;
+}
 
-while (Ping()>5)
+if ((ui_Right_Line_Tracker_Data > (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Left_Line_Tracker_Data > (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Middle_Line_Tracker_Data > (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)))
 {
+          servo_RightMotor.writeMicroseconds(1700);
+          servo_LeftMotor.writeMicroseconds(1700);
+}
+else {
+          servo_RightMotor.writeMicroseconds(1400);
+          servo_LeftMotor.writeMicroseconds(1700);
+}
+     
+}
+case 6:
+{
+  readLineTrackers();
+
+if (Ping()==0 || Ping()>10)
+{
+  readLineTrackers();
   servo_RightMotor.writeMicroseconds(1600);
   servo_LeftMotor.writeMicroseconds(1600);
 
-  /* if(ui_Middle_Line_Tracker_Data > (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))
+  if(ui_Middle_Line_Tracker_Data > (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))
   {
     servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
           servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
@@ -552,7 +561,61 @@ while (Ping()>5)
   else {
     servo_LeftMotor.writeMicroseconds(1600); 
     servo_RightMotor.writeMicroseconds(1600);
-  }*/
+  }
+}
+  if(Ping()==5)
+  {
+    servo_LeftMotor.writeMicroseconds(ci_Left_Motor_Stop); 
+    servo_RightMotor.writeMicroseconds(ci_Right_Motor_Stop);
+    delay(1000);
+    servo_GripMotor.write(ci_Grip_Motor_Open);
+    delay(1000);
+    servo_ArmMotor.write(ci_Arm_Servo_Extended);
+    delay(1000);
+    servo_GripMotor.write(ci_Grip_Motor_Closed);
+    delay(1000);
+    servo_ArmMotor.write(ci_Arm_Servo_Retracted);
+
+    servo_RightMotor.writeMicroseconds(1200);
+    servo_LeftMotor.writeMicroseconds(1200);
+    ui_Robot_State_Index=0;
+    break;
+    }
+}
+   
+/*case 6:
+{
+
+  servo_LeftMotor.writeMicroseconds(1600); 
+   servo_RightMotor.writeMicroseconds(1600);
+   delay(1000);
+  Ping();
+while (Ping()>5)
+{
+  servo_RightMotor.writeMicroseconds(1600);
+  servo_LeftMotor.writeMicroseconds(1600);
+
+  if(ui_Middle_Line_Tracker_Data > (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))
+  {
+    servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+          servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+  }
+
+   if(ui_Left_Line_Tracker_Data > (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))
+  {
+    servo_RightMotor.writeMicroseconds(ci_Right_Motor_Stop); 
+     servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+  }
+
+  if(ui_Right_Line_Tracker_Data > (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))
+  {
+      servo_LeftMotor.writeMicroseconds(ci_Left_Motor_Stop); 
+    servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+  }
+  else {
+    servo_LeftMotor.writeMicroseconds(1600); 
+    servo_RightMotor.writeMicroseconds(1600);
+  }
 
   if(Ping()<=6)
   {
@@ -569,16 +632,109 @@ while (Ping()>5)
 
     servo_RightMotor.writeMicroseconds(1200);
     servo_LeftMotor.writeMicroseconds(1200);
-
-    turn();
     }
 }
  
 }
-}
 
     /*ENDDDD OF MY CODEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE*/
     
+
+    /*ENDDDD OF MY CODEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE*/
+
+ /*MY CODEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE*/
+ /*
+case 5: 
+    {
+      readLineTrackers();
+     
+        servo_ArmMotor.write(ci_Arm_Servo_Retracted);
+      servo_GripMotor.write(ci_Grip_Motor_Closed);
+
+      servo_RightMotor.writeMicroseconds(1600);
+          servo_LeftMotor.writeMicroseconds(1600);
+}
+
+if ((ui_Right_Line_Tracker_Data > (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Left_Line_Tracker_Data > (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Middle_Line_Tracker_Data > (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)))
+{
+          servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+          servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+}
+else
+{
+  for(int pos = 0; pos < 10; pos++)  // goes from 0 degrees to 180 degrees 
+  {                                  // in steps of 1 degree 
+    servo_RightMotor.write(pos);              // tell servo to go to position in variable 'pos' 
+    delay(15);                       // waits 15ms for the servo to reach the position 
+  } 
+  servo_RightMotor.writeMicroseconds(1400);
+          servo_LeftMotor.writeMicroseconds(1600);
+     if ((ui_Right_Line_Tracker_Data > (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Left_Line_Tracker_Data < (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)))
+{
+  ui_Robot_State_Index=6;
+}
+}
+  
+}
+*/
+
+/*case 6:
+{
+
+  servo_LeftMotor.writeMicroseconds(ci_Left_Motor_Stop); 
+   servo_RightMotor.writeMicroseconds(ci_Right_Motor_Stop);
+   delay(1000);
+  Ping();
+while (Ping()>5)
+{
+  servo_RightMotor.writeMicroseconds(1600);
+  servo_LeftMotor.writeMicroseconds(1600);
+
+  if(ui_Middle_Line_Tracker_Data > (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))
+  {
+    servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+          servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+  }
+
+   if(ui_Left_Line_Tracker_Data > (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))
+  {
+    servo_RightMotor.writeMicroseconds(ci_Right_Motor_Stop); 
+     servo_LeftMotor.writeMicroseconds(ui_Left_Motor_Speed);
+  }
+
+  if(ui_Right_Line_Tracker_Data > (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))
+  {
+      servo_LeftMotor.writeMicroseconds(ci_Left_Motor_Stop); 
+    servo_RightMotor.writeMicroseconds(ui_Right_Motor_Speed);
+  }
+  else {
+    servo_LeftMotor.writeMicroseconds(1600); 
+    servo_RightMotor.writeMicroseconds(1600);
+  }
+
+  if(Ping()<=6)
+  {
+    servo_LeftMotor.writeMicroseconds(ci_Left_Motor_Stop); 
+    servo_RightMotor.writeMicroseconds(ci_Right_Motor_Stop);
+    delay(1000);
+    servo_GripMotor.write(ci_Grip_Motor_Open);
+    delay(1000);
+    servo_ArmMotor.write(ci_Arm_Servo_Extended);
+    delay(1000);
+    servo_GripMotor.write(ci_Grip_Motor_Closed);
+    delay(1000);
+    servo_ArmMotor.write(ci_Arm_Servo_Retracted);
+
+    servo_RightMotor.writeMicroseconds(1200);
+    servo_LeftMotor.writeMicroseconds(1200);
+    }
+}
+ 
+}
+*/
+    /*ENDDDD OF MY CODEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE*/
+
+ 
   }
 
   if((millis() - ul_Display_Time) > ci_Display_Time)
@@ -673,15 +829,3 @@ int Ping()
   Serial.println(ul_Echo_Time/58); //divide time by 58 to get distance in cm 
 #endif
 }
-
-void turn()
-{
-    servo_LeftMotor.writeMicroseconds(1600); 
-    servo_RightMotor.writeMicroseconds(1400);
-}
-
-
-
-
-
-
