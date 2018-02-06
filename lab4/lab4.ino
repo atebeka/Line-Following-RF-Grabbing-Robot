@@ -89,7 +89,7 @@ const int ci_Right_Motor_Offset_Address_H = 15;
 
 const int ci_Left_Motor_Stop = 1500;        // 200 for brake mode; 1500 for stop
 const int ci_Right_Motor_Stop = 1500;
-const int ci_Grip_Motor_Open = 140;         // Experiment to determine appropriate value
+const int ci_Grip_Motor_Open = 180;         // Experiment to determine appropriate value
 const int ci_Grip_Motor_Closed = 50;        //  "
 const int ci_Arm_Servo_Retracted = 70;      //  "
 const int ci_Arm_Servo_Extended = 120;      //  "
@@ -107,7 +107,7 @@ unsigned long ul_Echo_Time;
 unsigned int ui_Left_Line_Tracker_Data;
 unsigned int ui_Middle_Line_Tracker_Data;
 unsigned int ui_Right_Line_Tracker_Data;
-unsigned int ui_Motors_Speed = 1800;        // Default run speed
+unsigned int ui_Motors_Speed = 1700;        // Default run speed
 unsigned int ui_Left_Motor_Speed;
 unsigned int ui_Right_Motor_Speed;
 long l_Left_Motor_Position;
@@ -290,8 +290,8 @@ double  starttime = millis();
 #endif
 
        // set motor speeds
-        ui_Left_Motor_Speed = constrain(ui_Motors_Speed + ui_Left_Motor_Offset, 1550, 1650);
-        ui_Right_Motor_Speed = constrain(ui_Motors_Speed + ui_Right_Motor_Offset, 1550, 1650);
+        ui_Left_Motor_Speed = constrain(ui_Motors_Speed + ui_Left_Motor_Offset, 1525, 1650);
+        ui_Right_Motor_Speed = constrain(ui_Motors_Speed + ui_Right_Motor_Offset, 1525, 1650);
 
 /********************** LINE TRACKING ********************/
 
@@ -513,39 +513,42 @@ if((ui_Right_Line_Tracker_Data > (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_T
     {
 readLineTrackers();
 
-      if ((ui_Right_Line_Tracker_Data < (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Left_Line_Tracker_Data > (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))&& (ui_Middle_Line_Tracker_Data < (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) )
-{
-  servo_LeftMotor.writeMicroseconds(ci_Left_Motor_Stop); 
-   servo_RightMotor.writeMicroseconds(ci_Right_Motor_Stop);
-   delay(1000);
-  ui_Robot_State_Index=6;
-   break;
+if ((ui_Right_Line_Tracker_Data < (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Left_Line_Tracker_Data > (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance))&& (ui_Middle_Line_Tracker_Data < (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) )
+{         //If right and middle dont see black, and left does see black, turn both motors off and go to case 6
+          servo_LeftMotor.writeMicroseconds(ci_Left_Motor_Stop); 
+          servo_RightMotor.writeMicroseconds(ci_Right_Motor_Stop);
+          delay(1000);
+          ui_Robot_State_Index=6;
+          break;
 }
 
 if ((ui_Right_Line_Tracker_Data > (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Left_Line_Tracker_Data > (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Middle_Line_Tracker_Data > (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)))
-{
+{         //If all trackers see black, drive straight
           servo_RightMotor.writeMicroseconds(1700);
           servo_LeftMotor.writeMicroseconds(1700);
 }
-else {
+else {    //Else start rotating left 
           servo_RightMotor.writeMicroseconds(1400);
           servo_LeftMotor.writeMicroseconds(1700);
 }
-    break; 
+   break;  
 }
 
 case 6:
 {
   readLineTrackers();
-
-if (Ping()>10)
+  servo_GripMotor.write(ci_Grip_Motor_Open);
+  servo_ArmMotor.write(85);
+  
+Serial.print(Ping());
+if (Ping()==0 || Ping()>7)
 {
   readLineTrackers();
   servo_RightMotor.writeMicroseconds(1600);
   servo_LeftMotor.writeMicroseconds(1600);
   
 }
-  else
+  else if (digitalRead(ci_Light_Sensor)==0)
   {
     servo_LeftMotor.writeMicroseconds(ci_Left_Motor_Stop); 
     servo_RightMotor.writeMicroseconds(ci_Right_Motor_Stop);
@@ -557,16 +560,17 @@ if (Ping()>10)
     servo_GripMotor.write(ci_Grip_Motor_Closed);
     delay(1000);
     servo_ArmMotor.write(ci_Arm_Servo_Retracted);
+    ui_Robot_State_Index=8;
     break;
     }
-   // else {
-     // ui_Robot_State_Index=0;
-      //break;
-    //}
-    break;
+    else 
+    {
+      ui_Robot_State_Index=7;
+      }
+   break;
 }
 
- /*case 7:
+ case 7:
 {
   turnleft();
   if(digitalRead(ci_Light_Sensor)==0){
@@ -580,10 +584,27 @@ if (Ping()>10)
     servo_GripMotor.write(ci_Grip_Motor_Closed);
     delay(1000);
     servo_ArmMotor.write(ci_Arm_Servo_Retracted);
+    ui_Robot_State_Index=8;
+    break;
     }
     break;
 }
- */
+ case 8:
+{
+   readLineTrackers();
+
+  //servo_RightMotor.writeMicroseconds(1350);
+  //servo_LeftMotor.writeMicroseconds(1350);
+
+ turnright();
+    
+    if((ui_Right_Line_Tracker_Data > (ui_Right_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Left_Line_Tracker_Data < (ui_Left_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)) && (ui_Middle_Line_Tracker_Data < (ui_Middle_Line_Tracker_Dark - ui_Line_Tracker_Tolerance)))
+    {
+    ui_Robot_State_Index=1;
+    break;
+    }
+  break;
+  }
 
   if((millis() - ul_Display_Time) > ci_Display_Time)
   {
@@ -681,14 +702,15 @@ double distance= ul_Echo_Time/58;
 }
 void turnleft() {
   
-  servo_RightMotor.writeMicroseconds(1200);
-  servo_LeftMotor.writeMicroseconds(1600);
+  servo_RightMotor.writeMicroseconds(1425);
+  servo_LeftMotor.writeMicroseconds(1575);
 
 }
+
 void turnright() {
 
-   servo_RightMotor.writeMicroseconds(1600);
-  servo_LeftMotor.writeMicroseconds(1200);
+  servo_RightMotor.writeMicroseconds(1600);
+  servo_LeftMotor.writeMicroseconds(1400);
 
 }
 
